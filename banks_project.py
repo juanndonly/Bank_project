@@ -9,7 +9,7 @@ url = 'https://web.archive.org/web/20230908091635/https://en.wikipedia.org/wiki/
 db_name = 'Banks.db'
 table_attribs = ['Name','MC_USD_Billion']
 table_name = 'Largest_banks'
-csv_path = './Largest_banks_data.csv'
+csv_path = 'https://cf-courses-data.s3.us.cloud-object-storage.appdomain.cloud/IBMSkillsNetwork-PY0221EN-Coursera/labs/v2/exchange_rate.csv'
 
 def log_progress(message):
     log_file_path = './code_log.txt'
@@ -20,7 +20,7 @@ def log_progress(message):
         log_file.write(log_entry)
 
 def extract(url, table_attribs):
-    page = request.get(url).text
+    page = requests.get(url).text
     data = BeautifulSoup(page, 'html.parser')
     df = pd.DataFrame(columns = table_attribs)
     tables = data.find_all('tbody')
@@ -36,16 +36,18 @@ def extract(url, table_attribs):
             df = pd.concat([df,df1], ignore_index=True)
 
     return df
+
 def transform(df, csv_path):
     exchange_rate_df = pd.read_csv(csv_path)
-    usd_to_eur_rate = exchange_rate_df['USD_to_EUR'].iloc[0]
-    usd_to_jpy_rate = exchange_rate_df['USD_to_JPY'].iloc[0]
-    usd_to_gbp_rate = exchange_rate_df['USD_to_GBP'].iloc[0]
-    df['MC_EUR_Billion'] = df['MC_USD_Billion'] * usd_to_eur_rate
-    df['MC_JPY_Billion'] = df['MC_USD_Billion'] * usd_to_jpy_rate
-    df['MC_GBP_Billion'] = df['MC_USD_Billion'] * usd_to_gbp_rate
+
+    exchange_rate = exchange_rate_df.set_index('Currency').to_dict()['Rate']
+
+    df['MC_GBP_Billion'] = [np.round(x * exchange_rate['GBP'], 2) for x in df['MC_USD_Billion']]
+    df['MC_EUR_Billion'] = [np.round(x * exchange_rate['EUR'], 1) for x in df['MC_USD_Billion']]
+    df['MC_INR_Billion'] = [np.round(x * exchange_rate['INR'], 3) for x in df['MC_USD_Billion']]
 
     return df
+
 def load_to_csv(df, output_path):
     df.to_csv(output_path, index=False)
 
@@ -62,6 +64,38 @@ def run_query(query_statement, sql_connection):
     query_2 = "SELECT AVG(MC_GBP_Billion) FROM Largest_banks"
     query_3 = "SELECT Name FROM Largest_banks LIMIT 5"
 
+    run_query(query_1, sql_connection)
+    run_query(query_2, sql_connection)
+    run_query(query_3, sql_connection)
+    log_progress('Process Complete')
+
+def main():
+    log_progress('Preliminaries complete. Initiating ETL process')
+
+    df = extract(url, table_attribs)
+    log_progress('Data extraction complete. Initiating Transformation process')
+
+    df = transform(df, csv_path)
+    log_progress('Data transformation complete. Initiating loading process')
+
+    load_to_csv(df, csv_path)
+    log_progress('Data saved to CSV file')
+
+    sql_connection = sqlite3.connect(db_name)
+    log_progress('SQL Connection initiated.')
+
+    load_to_db(df, sql_connection, table_name)
+    log_progress('Data loaded to Database as table. Running the query')
+
+    query_statement = f"SELECT * FROM {table_name}"
+    run_query(query_statement, sql_connection)
+
+    sql_connection.close()
+    log_progress('Server Connection closed')
+
+    log_progress('Process Complete.')
+
+main()
 
     run_query(query_1, sql_connection)
     run_query(query_2, sql_connection)
