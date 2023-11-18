@@ -63,6 +63,6 @@ def run_query(query_statement, sql_connection):
     query_3 = "SELECT Name FROM Largest_banks LIMIT 5"
 
 
-    run_query(query_1, your_sql_connection_variable)
-    run_query(query_2, your_sql_connection_variable)
-    run_query(query_3, your_sql_connection_variable)
+    run_query(query_1, sql_connection)
+    run_query(query_2, sql_connection)
+    run_query(query_3, sql_connection)
