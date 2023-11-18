@@ -39,7 +39,6 @@ def extract(url, table_attribs):
 
 def transform(df, csv_path):
     exchange_rate_df = pd.read_csv(csv_path)
-
     exchange_rate = exchange_rate_df.set_index('Currency').to_dict()['Rate']
 
     df['MC_GBP_Billion'] = [np.round(x * exchange_rate['GBP'], 2) for x in df['MC_USD_Billion']]
@@ -49,7 +48,7 @@ def transform(df, csv_path):
     return df
 
 def load_to_csv(df, output_path):
-    df.to_csv(output_path, index=False)
+    df.to_csv('./Largest_banks_data.csv', index=False)
 
 def load_to_db(df, sql_connection, table_name):
     df.to_sql(table_name, sql_connection, if_exists='replace', index=False)
@@ -58,6 +57,7 @@ def run_query(query_statement, sql_connection):
     cursor = sql_connection.cursor()
     cursor.execute(query_statement)
     result = cursor.fetchall()
+    print(f"Query: {query_statement}")
     print(result)
 
     query_1 = "SELECT * FROM Largest_banks"
@@ -67,7 +67,6 @@ def run_query(query_statement, sql_connection):
     run_query(query_1, sql_connection)
     run_query(query_2, sql_connection)
     run_query(query_3, sql_connection)
-    log_progress('Process Complete')
 
 def main():
     log_progress('Preliminaries complete. Initiating ETL process')
@@ -77,6 +76,7 @@ def main():
 
     df = transform(df, csv_path)
     log_progress('Data transformation complete. Initiating loading process')
+    print(df)
 
     load_to_csv(df, csv_path)
     log_progress('Data saved to CSV file')
@@ -96,7 +96,3 @@ def main():
     log_progress('Process Complete.')
 
 main()
-
-    run_query(query_1, sql_connection)
-    run_query(query_2, sql_connection)
-    run_query(query_3, sql_connection)
