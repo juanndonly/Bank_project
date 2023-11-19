@@ -51,7 +51,7 @@ def load_to_csv(df, output_path):
     df.to_csv('./Largest_banks_data.csv', index=False)
 
 def load_to_db(df, sql_connection, table_name):
-    df.to_sql(table_name, sql_connection, if_exists='replace', index=False)
+    df.to_sql(table_name, sql_connection, if_exists='append', index=False)
 
 def run_query(query_statement, sql_connection):
     cursor = sql_connection.cursor()
@@ -59,14 +59,6 @@ def run_query(query_statement, sql_connection):
     result = cursor.fetchall()
     print(f"Query: {query_statement}")
     print(result)
-
-    query_1 = "SELECT * FROM Largest_banks"
-    query_2 = "SELECT AVG(MC_GBP_Billion) FROM Largest_banks"
-    query_3 = "SELECT Name FROM Largest_banks LIMIT 5"
-
-    run_query(query_1, sql_connection)
-    run_query(query_2, sql_connection)
-    run_query(query_3, sql_connection)
 
 def main():
     log_progress('Preliminaries complete. Initiating ETL process')
@@ -85,10 +77,16 @@ def main():
     log_progress('SQL Connection initiated.')
 
     load_to_db(df, sql_connection, table_name)
-    log_progress('Data loaded to Database as table. Running the query')
+    log_progress('Data loaded to Database as table. Running the queries')
 
-    query_statement = f"SELECT * FROM {table_name}"
-    run_query(query_statement, sql_connection)
+    query_statement_1 = "SELECT * FROM Largest_banks"
+    run_query(query_statement_1, sql_connection)
+
+    query_statement_2 = "SELECT AVG(MC_GBP_Billion) FROM Largest_banks"
+    run_query(query_statement_2, sql_connection)
+
+    query_statement_3 = "SELECT Name FROM Largest_banks LIMIT 5"
+    run_query(query_statement_3, sql_connection)
 
     sql_connection.close()
     log_progress('Server Connection closed')
